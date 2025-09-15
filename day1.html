@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>全屏滑动图片展示</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      body {
+        background-color: #000;
+        touch-action: pan-y; /* 允许垂直滚动 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #imageContainer {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+      }
+      #imageContainer img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 100%; /* 初始不显示 */
+        transition: transform 0.3s ease;
+      }
+      #imageContainer img.active {
+        left: 0;
+        transform: translateX(0);
+        z-index: 1;
+      }
+      #imageContainer img.prev {
+        left: -100%;
+      }
+      #imageContainer img.next {
+        left: 100%;
+      }
+      /* 页码提示 */
+      #pageIndicator {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 16px;
+        z-index: 10;
+        user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="imageContainer"></div>
+    <div id="pageIndicator">1 / 3</div>
+
+    <script>
+      const images = [
+        "https://static.hezhongfangchan.com/static/web/asset/zxhTest/z4.png",
+        "https://static.hezhongfangchan.com/static/web/asset/zxhTest/1.webp",
+        "https://static.hezhongfangchan.com/static/web/asset/zxhTest/2.png",
+      ];
+
+      const container = document.getElementById("imageContainer");
+      const pageIndicator = document.getElementById("pageIndicator");
+
+      const imgElements = images.map((src, i) => {
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = "图片" + (i + 1);
+        container.appendChild(img);
+        return img;
+      });
+
+      let currentIndex = 0;
+      imgElements[currentIndex].classList.add("active");
+      updatePageIndicator();
+
+      let startX = 0;
+      let currentTranslate = 0;
+      let isDragging = false;
+
+      container.addEventListener("touchstart", (e) => {
+        startX = e.touches[0].clientX;
+        isDragging = true;
+        imgElements.forEach((img) => (img.style.transition = "none"));
+      });
+
+      container.addEventListener("touchmove", (e) => {
+        if (!isDragging) return;
+        const currentX = e.touches[0].clientX;
+        const diffX = currentX - startX;
+        // 当前图片跟随手指滑动
+        imgElements[currentIndex].style.transform = `translateX(${diffX}px)`;
+        // 上一张和下一张跟随
+        if (currentIndex > 0)
+          imgElements[currentIndex - 1].style.transform = `translateX(${
+            diffX - window.innerWidth
+          }px)`;
+        if (currentIndex < images.length - 1)
+          imgElements[currentIndex + 1].style.transform = `translateX(${
+            diffX + window.innerWidth
+          }px)`;
+      });
+
+      container.addEventListener("touchend", (e) => {
+        isDragging = false;
+        const endX = e.changedTouches[0].clientX;
+        const diffX = endX - startX;
+
+        imgElements.forEach(
+          (img) => (img.style.transition = "transform 0.3s ease")
+        );
+
+        if (diffX > 50 && currentIndex > 0) {
+          // 向右滑上一张
+          imgElements[currentIndex].classList.remove("active");
+          currentIndex--;
+          imgElements[currentIndex].classList.add("active");
+        } else if (diffX < -50 && currentIndex < images.length - 1) {
+          // 向左滑下一张
+          imgElements[currentIndex].classList.remove("active");
+          currentIndex++;
+          imgElements[currentIndex].classList.add("active");
+        }
+
+        // 重置 transform
+        imgElements.forEach(
+          (img, i) => (img.style.transform = "translateX(0)")
+        );
+        updatePageIndicator();
+      });
+
+      function updatePageIndicator() {
+        pageIndicator.textContent = `${currentIndex + 1} / ${images.length}`;
+      }
+    </script>
+  </body>
+</html>
